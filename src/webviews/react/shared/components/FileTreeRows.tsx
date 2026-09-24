@@ -125,6 +125,7 @@ interface TreeFolderWiring {
     isSomeChecked: boolean;
     onToggleFolderCheck: (path: string) => void;
     checkboxVisibility?: "visible" | "hidden" | "none";
+    vscodeContext?: string;
 }
 
 type TreeFolderWithDescendantFiles<F extends TreeRowFile> = TreeFolder<F> & {
@@ -351,6 +352,7 @@ function TreeFolderRowImpl<F extends TreeRowFile>({
             onClick={(event) => {
                 if (!isCheckboxInput(event.target)) toggleFolder();
             }}
+            data-vscode-context={wiring?.vscodeContext}
             title={folder.path}
         >
             <TreeIndentGuides

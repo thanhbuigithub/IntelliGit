@@ -81,6 +81,35 @@ describe("FileTreeRows additive capabilities", () => {
         unmount(root, container);
     });
 
+    it("attaches native context only to folders whose caller provides it", () => {
+        installWebviewI18n();
+        const baseline = renderRows();
+        expect(
+            baseline.container.querySelector('[title="src"]')?.hasAttribute("data-vscode-context"),
+        ).toBe(false);
+        unmount(baseline.root, baseline.container);
+
+        const { root, container } = renderRows({
+            folderWiring: () => ({
+                isAllChecked: false,
+                isSomeChecked: false,
+                onToggleFolderCheck: noop,
+                vscodeContext: JSON.stringify({
+                    webviewSection: "fileTreeFolder",
+                    folderPath: "src",
+                }),
+            }),
+        });
+        const context = container
+            .querySelector('[title="src"]')
+            ?.getAttribute("data-vscode-context");
+        expect(JSON.parse(context ?? "{}")).toEqual({
+            webviewSection: "fileTreeFolder",
+            folderPath: "src",
+        });
+        unmount(root, container);
+    });
+
     it("renders file and folder checkbox wiring across all visibility modes", () => {
         installWebviewI18n();
         const onFileCheck = vi.fn();

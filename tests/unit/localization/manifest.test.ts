@@ -93,7 +93,7 @@ describe("extension manifest", () => {
         }
     });
 
-    it("limits ignored commit-panel file context actions to delete and refresh", () => {
+    it("keeps rollback, jump and shelve unavailable for ignored commit-panel files", () => {
         const manifest = JSON.parse(
             readFileSync(path.join(process.cwd(), "package.json"), "utf8"),
         ) as ExtensionManifest;
@@ -121,6 +121,31 @@ describe("extension manifest", () => {
             "intelligit.fileShelve",
         ]) {
             expect(itemFor(command)?.when).toContain("&& !webviewIgnoredFile");
+        }
+    });
+
+    it("contributes Add to gitignore for both file and folder rows in the commit tree", () => {
+        const manifest = JSON.parse(
+            readFileSync(path.join(process.cwd(), "package.json"), "utf8"),
+        ) as ExtensionManifest;
+        for (const command of [
+            "intelligit.fileAddToGitignore",
+            "intelligit.fileAddToGitignoreAndUntrack",
+        ]) {
+            const item = manifest.contributes?.menus?.["webview/context"]?.find(
+                (entry) => entry.command === command,
+            );
+            expect(manifest.contributes?.commands?.some((entry) => entry.command === command)).toBe(
+                true,
+            );
+            expect(item?.when).toContain("webviewId == 'intelligit.commitPanel'");
+            expect(item?.when).toContain("webviewId == 'intelligit.undocked'");
+            expect(item?.when).toContain("webviewSection == 'file'");
+            expect(item?.when).toContain("webviewSection == 'fileTreeFolder'");
+            expect(
+                manifest.contributes?.menus?.commandPalette?.find((entry) => entry.command === command)
+                    ?.when,
+            ).toBe("false");
         }
     });
 

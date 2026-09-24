@@ -95,6 +95,8 @@
     "command.diffShowInVsCode": "Mostrar diferencia en VS Code",
     "command.showFileHistory": "Mostrar historial del archivo",
     "command.addToVcs": "Agregar al control de código fuente",
+    "command.addToGitignore": "Agregar a .gitignore",
+    "command.addToGitignoreAndUntrack": "Agregar a .gitignore y dejar de seguir",
     "command.showFileDiff": "Mostrar diferencia",
     "command.showCurrentRevision": "Mostrar revisión actual",
     "command.annotateWithGitBlame": "Anotar con Git Blame"

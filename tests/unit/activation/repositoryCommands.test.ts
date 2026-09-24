@@ -30,6 +30,8 @@ const mocks = vi.hoisted(() => {
         createBranchCommands: vi.fn(() => []),
         discoverGitRepositories: vi.fn(async () => []),
         runGitOperationFromPanel: vi.fn(async () => undefined),
+        addToGitignore: vi.fn(async () => true),
+        untrackIgnoredPath: vi.fn(async () => true),
     };
 });
 
@@ -39,7 +41,7 @@ vi.mock("vscode", () => ({
         executeCommand: mocks.executeCommand,
     },
     l10n: {
-        t: (message: string) => mocks.l10nT(message),
+        t: (message: string, args?: unknown) => mocks.l10nT(message, args),
     },
     window: {
         showErrorMessage: mocks.showErrorMessage,
@@ -73,6 +75,11 @@ vi.mock("../../../src/commands/fileContextCommands", () => ({
 
 vi.mock("../../../src/views/commitPanelActions", () => ({
     runGitOperationFromPanel: mocks.runGitOperationFromPanel,
+}));
+
+vi.mock("../../../src/commands/gitignoreCommand", () => ({
+    addToGitignore: mocks.addToGitignore,
+    untrackIgnoredPath: mocks.untrackIgnoredPath,
 }));
 
 vi.mock("../../../src/commands/branchCommands", () => ({
@@ -135,7 +142,7 @@ const makeDeps = (gitOps: GitOps) => {
 
     return {
         context: { secrets: {}, subscriptions: [] },
-        executor: {},
+        executor: { deriveFor: vi.fn((root: string) => ({ root, run: vi.fn() })) },
         gitOps,
         worktreeService: {},
         getRepoRoot: () => "/repo",
@@ -162,6 +169,8 @@ describe("registerRepositoryCommands", () => {
         mocks.branchHandlers.clear();
         mocks.commands.clear();
         vi.clearAllMocks();
+        mocks.addToGitignore.mockResolvedValue(true);
+        mocks.untrackIgnoredPath.mockResolvedValue(true);
         mocks.l10nT.mockImplementation((message: string) => `xx:${message}`);
         mocks.pullFileRepositoryFromContext.mockImplementation(
             async (
@@ -751,6 +760,209 @@ describe("registerRepositoryCommands", () => {
             "xx:Rollback",
         );
         expect(gitOps.rollbackFiles).toHaveBeenCalledWith(["src/a.ts"]);
+    });
+
+    describe("intelligit.fileAddToGitignore", () => {
+        const command = (
+            id = "intelligit.fileAddToGitignore",
+        ): ((context: unknown) => Promise<void>) => {
+            const handler = mocks.commands.get(id);
+            expect(handler).toBeTypeOf("function");
+            return handler as (context: unknown) => Promise<void>;
+        };
+        const untrackCommand = () => command("intelligit.fileAddToGitignoreAndUntrack");
+
+        it.each([
+            { filePath: "src/a.ts", folderPath: undefined, isFolder: false },
+            { filePath: undefined, folderPath: "src/cache", isFolder: true },
+        ])(
+            "passes only the clicked $isFolder target in the selected repository",
+            async (target) => {
+                const deps = makeDeps(makeGitOps());
+                const refreshCommitPanels = vi.fn(async () => undefined);
+                deps.refreshService = vi.fn(
+                    () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+                );
+                deps.isKnownRepositoryRoot = (root) => root === "/repo/selected";
+                registerRepositoryCommands(deps);
+
+                await command()({ repositoryRoot: "/repo/selected", ...target });
+
+                expect(mocks.addToGitignore).toHaveBeenCalledWith(
+                    "/repo/selected",
+                    target.filePath ?? target.folderPath,
+                    target.isFolder,
+                );
+                expect(deps.executor.deriveFor).not.toHaveBeenCalled();
+                expect(mocks.untrackIgnoredPath).not.toHaveBeenCalled();
+                expect(mocks.showWarningMessage).not.toHaveBeenCalled();
+                expect(refreshCommitPanels).toHaveBeenCalledTimes(1);
+            },
+        );
+
+        it.each([
+            { repositoryRoot: "/unknown", filePath: "src/a.ts" },
+            { repositoryRoot: "/repo", filePath: 1 },
+            { repositoryRoot: "/repo", filePath: "src/a.ts", folderPath: "src" },
+            { filePath: "src/a.ts" },
+        ])("rejects an invalid context without writing for %o", async (context) => {
+            registerRepositoryCommands(makeDeps(makeGitOps()));
+            await command()(context);
+            await untrackCommand()(context);
+            expect(mocks.addToGitignore).not.toHaveBeenCalled();
+            expect(mocks.untrackIgnoredPath).not.toHaveBeenCalled();
+            expect(mocks.showWarningMessage).not.toHaveBeenCalled();
+        });
+
+        it("does not misreport a completed write when refreshing fails", async () => {
+            const deps = makeDeps(makeGitOps());
+            const refreshError = new Error("refresh unavailable");
+            deps.refreshService = vi.fn(
+                () =>
+                    ({
+                        refreshCommitPanels: vi.fn(async () => {
+                            throw refreshError;
+                        }),
+                    }) as ReturnType<typeof deps.refreshService>,
+            );
+            const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+            registerRepositoryCommands(deps);
+            try {
+                await expect(
+                    command()({ repositoryRoot: "/repo", filePath: "src/a.ts" }),
+                ).resolves.toBeUndefined();
+                expect(mocks.showErrorMessage).not.toHaveBeenCalled();
+                expect(consoleError).toHaveBeenCalledWith(
+                    "Failed to refresh after adding to gitignore:",
+                    refreshError,
+                );
+            } finally {
+                consoleError.mockRestore();
+            }
+        });
+
+        it.each([
+            { filePath: "src/a.ts", folderPath: undefined, isFolder: false },
+            { filePath: undefined, folderPath: "src/cache", isFolder: true },
+        ])("asks before untracking the selected $isFolder target", async (target) => {
+            const deps = makeDeps(makeGitOps());
+            deps.isKnownRepositoryRoot = (root) => root === "/repo/selected";
+            const refreshCommitPanels = vi.fn(async () => undefined);
+            deps.refreshService = vi.fn(
+                () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+            );
+            mocks.showWarningMessage.mockResolvedValueOnce("xx:Untrack");
+            registerRepositoryCommands(deps);
+
+            await untrackCommand()({ repositoryRoot: "/repo/selected", ...target });
+
+            expect(mocks.addToGitignore).toHaveBeenCalledWith(
+                "/repo/selected", target.filePath ?? target.folderPath, target.isFolder,
+            );
+            expect(mocks.showWarningMessage).toHaveBeenCalledWith(
+                "xx:Stop tracking {path}? Files will remain on disk.",
+                { modal: true },
+                "xx:Untrack",
+            );
+            expect(mocks.l10nT).toHaveBeenCalledWith(
+                "Stop tracking {path}? Files will remain on disk.",
+                { path: target.filePath ?? target.folderPath },
+            );
+            expect(deps.executor.deriveFor).toHaveBeenCalledWith("/repo/selected");
+            expect(mocks.untrackIgnoredPath).toHaveBeenCalledWith(
+                expect.objectContaining({ root: "/repo/selected" }),
+                target.filePath ?? target.folderPath,
+            );
+            expect(mocks.addToGitignore.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.showWarningMessage.mock.invocationCallOrder[0],
+            );
+            expect(mocks.showWarningMessage.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.untrackIgnoredPath.mock.invocationCallOrder[0],
+            );
+            expect(refreshCommitPanels).toHaveBeenCalledOnce();
+        });
+
+        it("keeps the ignore rule but never untracks when confirmation is dismissed", async () => {
+            const deps = makeDeps(makeGitOps());
+            const refreshCommitPanels = vi.fn(async () => undefined);
+            deps.refreshService = vi.fn(
+                () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+            );
+            mocks.showWarningMessage.mockResolvedValueOnce(undefined);
+            registerRepositoryCommands(deps);
+            await untrackCommand()({ repositoryRoot: "/repo", folderPath: "src/cache" });
+            expect(mocks.addToGitignore).toHaveBeenCalledOnce();
+            expect(mocks.untrackIgnoredPath).not.toHaveBeenCalled();
+            expect(deps.executor.deriveFor).not.toHaveBeenCalled();
+            expect(refreshCommitPanels).toHaveBeenCalledOnce();
+        });
+
+        it("can untrack a file whose ignore rule already exists", async () => {
+            const deps = makeDeps(makeGitOps());
+            const refreshCommitPanels = vi.fn(async () => undefined);
+            deps.refreshService = vi.fn(
+                () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+            );
+            registerRepositoryCommands(deps);
+            mocks.addToGitignore.mockResolvedValueOnce(false);
+            mocks.showWarningMessage.mockResolvedValueOnce("xx:Untrack");
+            await untrackCommand()({ repositoryRoot: "/repo", filePath: "src/a.ts" });
+            expect(mocks.untrackIgnoredPath).toHaveBeenCalledOnce();
+            expect(refreshCommitPanels).toHaveBeenCalledOnce();
+        });
+
+        it("does not refresh when neither the rule nor the index changed", async () => {
+            const deps = makeDeps(makeGitOps());
+            const refreshCommitPanels = vi.fn(async () => undefined);
+            deps.refreshService = vi.fn(
+                () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+            );
+            registerRepositoryCommands(deps);
+            mocks.addToGitignore.mockResolvedValueOnce(false);
+            mocks.untrackIgnoredPath.mockResolvedValueOnce(false);
+            mocks.showWarningMessage.mockResolvedValueOnce("xx:Untrack");
+            await untrackCommand()({ repositoryRoot: "/repo", filePath: "src/a.ts" });
+            expect(refreshCommitPanels).not.toHaveBeenCalled();
+        });
+
+        it("refreshes after a saved rule even if untracking fails, and reports the partial failure", async () => {
+            const deps = makeDeps(makeGitOps());
+            const refreshCommitPanels = vi.fn(async () => undefined);
+            deps.refreshService = vi.fn(
+                () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+            );
+            registerRepositoryCommands(deps);
+            mocks.showWarningMessage.mockResolvedValueOnce("xx:Untrack");
+            mocks.untrackIgnoredPath.mockRejectedValueOnce(new Error("index locked"));
+            await untrackCommand()({ repositoryRoot: "/repo", folderPath: "src/cache" });
+            expect(mocks.showErrorMessage).toHaveBeenCalledWith(
+                "xx:Add to gitignore failed: {message}",
+            );
+            expect(mocks.l10nT).toHaveBeenCalledWith(
+                "Add to gitignore failed: {message}",
+                expect.objectContaining({
+                    message: expect.stringContaining("Git could not stop tracking src/cache"),
+                }),
+            );
+            expect(refreshCommitPanels).toHaveBeenCalledOnce();
+        });
+
+        it("does not untrack or refresh when writing .gitignore fails", async () => {
+            const deps = makeDeps(makeGitOps());
+            const refreshCommitPanels = vi.fn(async () => undefined);
+            deps.refreshService = vi.fn(
+                () => ({ refreshCommitPanels }) as ReturnType<typeof deps.refreshService>,
+            );
+            registerRepositoryCommands(deps);
+            mocks.addToGitignore.mockRejectedValueOnce(new Error("No permission"));
+            await untrackCommand()({ repositoryRoot: "/repo", folderPath: "src" });
+            expect(mocks.showErrorMessage).toHaveBeenCalledWith(
+                "xx:Add to gitignore failed: {message}",
+            );
+            expect(refreshCommitPanels).not.toHaveBeenCalled();
+            expect(mocks.showWarningMessage).not.toHaveBeenCalled();
+            expect(mocks.untrackIgnoredPath).not.toHaveBeenCalled();
+        });
     });
 
     describe("intelligit.fileAddToVcs", () => {

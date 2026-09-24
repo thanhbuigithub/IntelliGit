@@ -21,6 +21,8 @@
         "intelligit.diff.showInIntelliGit",
         "intelligit.diff.showInVsCode",
         "intelligit.dockWindow",
+        "intelligit.fileAddToGitignore",
+        "intelligit.fileAddToGitignoreAndUntrack",
         "intelligit.fileAddToVcs",
         "intelligit.fileDelete",
         "intelligit.fileFetch",

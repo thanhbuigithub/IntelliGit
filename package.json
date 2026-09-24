@@ -482,6 +482,16 @@
                 "category": "%intelligit%"
             },
             {
+                "command": "intelligit.fileAddToGitignore",
+                "title": "%command.addToGitignore%",
+                "category": "%intelligit%"
+            },
+            {
+                "command": "intelligit.fileAddToGitignoreAndUntrack",
+                "title": "%command.addToGitignoreAndUntrack%",
+                "category": "%intelligit%"
+            },
+            {
                 "command": "intelligit.compareWithRevision",
                 "title": "%command.compareWithRevision%",
                 "category": "%intelligit%",
@@ -702,6 +712,14 @@
                 },
                 {
                     "command": "intelligit.fileAddToVcs",
+                    "when": "false"
+                },
+                {
+                    "command": "intelligit.fileAddToGitignore",
+                    "when": "false"
+                },
+                {
+                    "command": "intelligit.fileAddToGitignoreAndUntrack",
                     "when": "false"
                 },
                 {
@@ -1027,6 +1045,16 @@
                     "command": "intelligit.fileAddToVcs",
                     "when": "(webviewId == 'intelligit.commitPanel' || webviewId == 'intelligit.undocked') && webviewSection == 'file' && webviewUnversionedFile == true",
                     "group": "1_actions@0"
+                },
+                {
+                    "command": "intelligit.fileAddToGitignore",
+                    "when": "(webviewId == 'intelligit.commitPanel' || webviewId == 'intelligit.undocked') && (webviewSection == 'file' || webviewSection == 'fileTreeFolder')",
+                    "group": "1_actions@0.5"
+                },
+                {
+                    "command": "intelligit.fileAddToGitignoreAndUntrack",
+                    "when": "(webviewId == 'intelligit.commitPanel' || webviewId == 'intelligit.undocked') && (webviewSection == 'file' || webviewSection == 'fileTreeFolder')",
+                    "group": "1_actions@0.6"
                 },
                 {
                     "command": "intelligit.fileRollback",

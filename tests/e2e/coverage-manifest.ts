@@ -213,6 +213,20 @@ const COMMAND_ENTRIES = [
     },
     {
         kind: "command",
+        id: "intelligit.fileAddToGitignore",
+        mutating: true,
+        notCovered:
+            "No implemented flow exercises Add to gitignore from the native webview context menu.",
+    },
+    {
+        kind: "command",
+        id: "intelligit.fileAddToGitignoreAndUntrack",
+        mutating: true,
+        notCovered:
+            "No implemented flow exercises Add to gitignore and untrack from the native webview context menu.",
+    },
+    {
+        kind: "command",
         id: "intelligit.fileAddToVcs",
         mutating: true,
         // Native webview/context dispatch is covered by repositoryCommands.test.ts and the

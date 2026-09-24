@@ -95,6 +95,8 @@
     "command.diffShowInVsCode": "Показать различия в VS Code",
     "command.showFileHistory": "Показать историю файла",
     "command.addToVcs": "Добавить в систему контроля версий",
+    "command.addToGitignore": "Добавить в .gitignore",
+    "command.addToGitignoreAndUntrack": "Добавить в .gitignore и прекратить отслеживание",
     "command.showFileDiff": "Показать различия",
     "command.showCurrentRevision": "Показать текущую ревизию",
     "command.annotateWithGitBlame": "Добавить аннотации Git Blame"

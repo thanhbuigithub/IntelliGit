@@ -19,6 +19,7 @@ import {
     showFileDiff,
 } from "../commands/fileContextCommands";
 import { GitOps } from "../git/operations";
+import { addToGitignore, untrackIgnoredPath } from "../commands/gitignoreCommand";
 import { remoteUrlToWebUrl } from "../git/remoteWebUrl";
 import { runPublishBranchFlow } from "../services/publishService";
 import type { WorktreeService } from "../services/worktreeService";
@@ -628,6 +629,59 @@ function registerCommitFileCommands(deps: RepositoryCommandsDeps): void {
         refreshService,
     } = deps;
 
+    const addSelectedPathToGitignore = async (
+        ctx: unknown,
+        offerUntrack: boolean,
+    ): Promise<void> => {
+        if (!ctx || typeof ctx !== "object") return;
+        const { repositoryRoot, filePath, folderPath } = ctx as {
+            repositoryRoot?: unknown;
+            filePath?: unknown;
+            folderPath?: unknown;
+        };
+        if (typeof repositoryRoot !== "string" || !isKnownRepositoryRoot(repositoryRoot)) return;
+        const isFolder = typeof folderPath === "string";
+        if ((typeof filePath === "string") === isFolder) return;
+        const selectedPath = isFolder ? folderPath : filePath;
+        if (typeof selectedPath !== "string") return;
+        let changed = false;
+        let trackingAttempted = false;
+        try {
+            changed = await addToGitignore(repositoryRoot, selectedPath, isFolder);
+            if (offerUntrack) {
+                const untrackAction = vscode.l10n.t("Untrack");
+                const confirmed = await vscode.window.showWarningMessage(
+                    vscode.l10n.t("Stop tracking {path}? Files will remain on disk.", {
+                        path: selectedPath,
+                    }),
+                    { modal: true },
+                    untrackAction,
+                );
+                if (confirmed === untrackAction) {
+                    trackingAttempted = true;
+                    changed =
+                        (await untrackIgnoredPath(executor.deriveFor(repositoryRoot), selectedPath)) ||
+                        changed;
+                }
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(
+                vscode.l10n.t("Add to gitignore failed: {message}", {
+                    message:
+                        changed && trackingAttempted
+                            ? `.gitignore was updated, but Git could not stop tracking ${selectedPath}: ${getErrorMessage(error)}`
+                            : getErrorMessage(error),
+                }),
+            );
+        }
+        if (!changed) return;
+        try {
+            await refreshService().refreshCommitPanels();
+        } catch (error) {
+            console.error("Failed to refresh after adding to gitignore:", error);
+        }
+    };
+
     context.subscriptions.push(
         vscode.commands.registerCommand("intelligit.fileAddToVcs", async (ctx: unknown) => {
             const input = resolveAddToVcsContext(ctx);
@@ -643,6 +697,12 @@ function registerCommitFileCommands(deps: RepositoryCommandsDeps): void {
                 input.filePaths,
             );
         }),
+        vscode.commands.registerCommand("intelligit.fileAddToGitignore", (ctx: unknown) =>
+            addSelectedPathToGitignore(ctx, false),
+        ),
+        vscode.commands.registerCommand("intelligit.fileAddToGitignoreAndUntrack", (ctx: unknown) =>
+            addSelectedPathToGitignore(ctx, true),
+        ),
         vscode.commands.registerCommand(
             "intelligit.commitFileCompareWithLocal",
             async (ctx: unknown) => {

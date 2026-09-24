@@ -1876,8 +1876,16 @@ describe("webview ui smoke", () => {
             webviewSection: "file",
             webviewUnversionedFile: true,
         });
-        expect(contextFor("tracked.ts").webviewUnversionedFile).toBe(false);
-        expect(contextFor("ignored.ts").webviewUnversionedFile).toBe(false);
+        expect(contextFor("tracked.ts")).toMatchObject({
+            filePath: "tracked.ts",
+            repositoryRoot: "/repo/selected",
+            webviewUnversionedFile: false,
+        });
+        expect(contextFor("ignored.ts")).toMatchObject({
+            filePath: "ignored.ts",
+            repositoryRoot: "/repo/selected",
+            webviewUnversionedFile: false,
+        });
 
         act(() => {
             rowFor("checked-only.ts").dispatchEvent(
@@ -1899,6 +1907,47 @@ describe("webview ui smoke", () => {
         });
         expect(contextFor("checked-only.ts").repositoryRoot).toBe("/repo/reselected");
         unmount(mounted.root, mounted.container);
+    });
+
+    it("targets the folder path rather than the changed files within it", () => {
+        const mounted = mount(
+            <ChakraProvider theme={theme}>
+                <FileTree
+                    {...STABLE_FILE_TREE_PROPS}
+                    repositoryRoot="/repo/selected"
+                    groupByDir={true}
+                    files={[
+                        {
+                            path: "src/cache/one.ts",
+                            status: "?",
+                            staged: false,
+                            additions: 0,
+                            deletions: 0,
+                        },
+                        {
+                            path: "src/cache/two.ts",
+                            status: "?",
+                            staged: false,
+                            additions: 0,
+                            deletions: 0,
+                        },
+                    ]}
+                />
+            </ChakraProvider>,
+        );
+        try {
+            const folder = mounted.container.querySelector<HTMLElement>('[title="src/cache"]');
+            const context = JSON.parse(folder?.dataset.vscodeContext ?? "{}");
+            expect(context).toEqual({
+                webviewSection: "fileTreeFolder",
+                repositoryRoot: "/repo/selected",
+                folderPath: "src/cache",
+                preventDefaultContextMenuItems: true,
+            });
+            expect(context).not.toHaveProperty("filePaths");
+        } finally {
+            unmount(mounted.root, mounted.container);
+        }
     });
 
     it("shows parent paths after prioritized file names in flat file rows", () => {

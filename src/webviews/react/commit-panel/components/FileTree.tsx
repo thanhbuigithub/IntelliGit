@@ -203,9 +203,8 @@ function FileSection({
                 vscodeContext: JSON.stringify({
                     webviewSection: "file",
                     filePath: file.path,
-                    ...(repositoryRoot && filePaths.length > 0
-                        ? { repositoryRoot, filePaths }
-                        : {}),
+                    ...(repositoryRoot ? { repositoryRoot } : {}),
+                    ...(repositoryRoot && filePaths.length > 0 ? { filePaths } : {}),
                     webviewUnversionedFile: Boolean(repositoryRoot) && file.status === "?",
                     webviewIgnoredFile: file.status === "!",
                     preventDefaultContextMenuItems: true,
@@ -251,16 +250,24 @@ function FileSection({
         ],
     );
     const folderWiring = useCallback(
-        (folder: { descendantFiles?: WorkingFile[] }) => {
+        (folder: { path: string; descendantFiles?: WorkingFile[] }) => {
             const descendantFiles = folder.descendantFiles ?? [];
             return {
                 isAllChecked: getAllChecked(descendantFiles),
                 isSomeChecked: getSomeChecked(descendantFiles),
                 onToggleFolderCheck: () => onToggleFolder(descendantFiles),
                 checkboxVisibility,
+                vscodeContext: repositoryRoot
+                    ? JSON.stringify({
+                          webviewSection: "fileTreeFolder",
+                          repositoryRoot,
+                          folderPath: folder.path,
+                          preventDefaultContextMenuItems: true,
+                      })
+                    : undefined,
             };
         },
-        [checkboxVisibility, getAllChecked, getSomeChecked, onToggleFolder],
+        [checkboxVisibility, getAllChecked, getSomeChecked, onToggleFolder, repositoryRoot],
     );
     const fileWiringsByFile = useMemo(() => {
         const wirings = new Map<WorkingFile, ReturnType<typeof fileWiring>>();
