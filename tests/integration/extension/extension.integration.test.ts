@@ -1617,7 +1617,13 @@ describe("extension integration", () => {
             branch: { name: "main", isRemote: false, isCurrent: true },
         });
         await getCommand("intelligit.pushBranch")({
-            branch: { name: "main", isRemote: false, isCurrent: true, remote: "origin" },
+            branch: {
+                name: "main",
+                isRemote: false,
+                isCurrent: true,
+                remote: "origin",
+                upstream: "origin/main",
+            },
         });
         await getCommand("intelligit.renameBranch")({
             branch: { name: "feature-local", isRemote: false },
@@ -4502,13 +4508,19 @@ describe("extension integration", () => {
         });
 
         await registeredCommands.get("intelligit.pushBranch")?.({
-            branch: { name: "main", isRemote: false, isCurrent: true },
+            branch: { name: "main", isRemote: false, isCurrent: true, upstream: "origin/main" },
         });
         await registeredCommands.get("intelligit.pushBranch")?.({
             branch: { name: "topic", isRemote: false, isCurrent: false },
         });
         await registeredCommands.get("intelligit.pushBranch")?.({
-            branch: { name: "force-fail", isRemote: false, isCurrent: true, remote: "origin" },
+            branch: {
+                name: "force-fail",
+                isRemote: false,
+                isCurrent: true,
+                remote: "origin",
+                upstream: "origin/force-fail",
+            },
         });
 
         showInputBox.mockResolvedValueOnce("renamed-branch");

@@ -88,6 +88,27 @@ describe("branch menu", () => {
         expect(iconMarkup("pushBranch")).toContain("M8 1l3.35 3.35");
     });
 
+    it("labels the current branch action Publish without an upstream and Push when tracked", () => {
+        const unpublished = getBranchMenuItems(makeBranch({ isCurrent: true }), "main");
+        const tracked = getBranchMenuItems(
+            makeBranch({ isCurrent: true, upstream: "origin/main" }),
+            "main",
+        );
+        const blankUpstream = getBranchMenuItems(
+            makeBranch({ isCurrent: true, upstream: "  " }),
+            "main",
+        );
+        const nonCurrent = getBranchMenuItems(makeBranch({ name: "feature" }), "main");
+        const pushItem = (items: typeof unpublished) =>
+            items.find((item) => item.action === "pushBranch");
+
+        expect(pushItem(unpublished)?.label).toBe("Publish Branch…");
+        expect(pushItem(blankUpstream)?.label).toBe("Publish Branch…");
+        expect(pushItem(tracked)?.label).toBe("Push…");
+        expect(pushItem(nonCurrent)?.label).toBe("Push…");
+        expect(pushItem(unpublished)?.action).toBe("pushBranch");
+    });
+
     it("builds remote-branch menu with delete and without rename/push", () => {
         const items = getBranchMenuItems(
             makeBranch({ name: "origin/feature/test", isRemote: true }),

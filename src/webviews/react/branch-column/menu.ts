@@ -117,7 +117,7 @@ export function getWorktreeMenuItems(worktree: GitWorktree): WorktreeMenuItem[] 
 /**
  * Builds the context-menu model for a single branch row.
  *
- * Current branches show update/push/rename actions. Remote branches include
+ * Current branches show update/publish-or-push/rename actions. Remote branches include
  * delete and omit push/rename. Local non-current branches expose the full set:
  * checkout, rebase, merge, update, push, rename, and delete. Labels are
  * localized while action IDs stay aligned with the extension protocol's
@@ -154,7 +154,13 @@ export function getBranchMenuItems(branch: Branch, currentBranchName: string): B
             { label: t("branch.menu.newBranchFrom", { branch: current }), action: "newBranchFrom" },
             separator("sep-current-1"),
             { label: t("branch.menu.update"), action: "updateBranch", icon: pullBranchIcon() },
-            { label: t("branch.menu.push"), action: "pushBranch", icon: pushBranchIcon() },
+            {
+                label: t(
+                    branch.upstream?.trim() ? "branch.menu.push" : "commit.action.publishBranch",
+                ),
+                action: "pushBranch",
+                icon: pushBranchIcon(),
+            },
             separator("sep-current-2"),
             { label: t("branch.menu.rename"), action: "renameBranch" },
         ];

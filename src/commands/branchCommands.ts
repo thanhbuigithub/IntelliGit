@@ -644,7 +644,13 @@ export function createBranchCommands(deps: BranchCommandDeps): BranchCommandEntr
                     return;
                 }
                 try {
-                    await executor.run(["checkout", "-b", newName, base]);
+                    await executor.run([
+                        "checkout",
+                        ...(item.branch?.isRemote ? ["--no-track"] : []),
+                        "-b",
+                        newName,
+                        base,
+                    ]);
                     showTimedInformationMessage(
                         vscode.l10n.t("Created and checked out {branch}", { branch: newName }),
                     );
@@ -844,7 +850,7 @@ export function createBranchCommands(deps: BranchCommandDeps): BranchCommandEntr
                 if (!branch || branch.isRemote) return;
                 if (!validateBranchArg(branch.name)) return;
                 const tracked = resolveTrackedRemoteBranch(branch, getCurrentBranches());
-                if (!tracked && branch.isCurrent) {
+                if (branch.isCurrent && (!tracked || !branch.upstream?.trim())) {
                     await vscode.commands.executeCommand("intelligit.publishBranch");
                     return;
                 }
