@@ -7,8 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     selectChatModels: vi.fn(),
+    requestOpenAiCompatibleCommitMessage: vi.fn(),
     getConfiguration: vi.fn(),
     configuration: undefined as unknown,
+    commitMessageSettings: {} as Record<string, unknown>,
     openOverride: undefined as
         | undefined
         | ((path: string) => Promise<Awaited<ReturnType<typeof import("node:fs/promises").open>>>),
@@ -26,12 +28,24 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 vi.mock("vscode", () => ({
     lm: { selectChatModels: mocks.selectChatModels },
     workspace: {
-        getConfiguration: mocks.getConfiguration.mockImplementation(() => ({
-            get: () => mocks.configuration,
+        getConfiguration: mocks.getConfiguration.mockImplementation((section: string) => ({
+            get: (key: string) =>
+                section === "intelligit.commitMessageGeneration"
+                    ? mocks.commitMessageSettings[key]
+                    : mocks.configuration,
         })),
     },
     LanguageModelChatMessage: { User: vi.fn((content: string) => ({ content })) },
     LanguageModelError: class MockLanguageModelError extends Error {},
+}));
+
+vi.mock("../../../src/ai/openAiCompatibleCommitMessageClient", () => ({
+    OpenAiCompatibleError: class MockOpenAiCompatibleError extends Error {
+        constructor(readonly kind: string) {
+            super(kind);
+        }
+    },
+    requestOpenAiCompatibleCommitMessage: mocks.requestOpenAiCompatibleCommitMessage,
 }));
 
 import {
@@ -41,6 +55,7 @@ import {
     PromptTooLargeError,
     prepareCommitMessageGeneration,
 } from "../../../src/ai/commitMessageGenerator";
+import { OpenAiCompatibleError } from "../../../src/ai/openAiCompatibleCommitMessageClient";
 import { removeScratchDirectories } from "../../helpers/scratchDirectories";
 
 const directories: string[] = [];
@@ -57,7 +72,9 @@ afterEach(async () => {
 
 beforeEach(() => {
     mocks.configuration = undefined;
+    mocks.commitMessageSettings = {};
     mocks.selectChatModels.mockReset();
+    mocks.requestOpenAiCompatibleCommitMessage.mockReset();
     mocks.openOverride = undefined;
 });
 
@@ -98,12 +115,14 @@ function cancellableToken(): {
 function model(
     family: string,
     options: {
+        id?: string;
         maxInputTokens?: number;
         countTokens?: (value: string) => number;
         text?: AsyncIterable<string>;
     } = {},
 ): Record<string, unknown> {
     return {
+        ...(options.id ? { id: options.id } : {}),
         family,
         maxInputTokens: options.maxInputTokens ?? 10_000,
         countTokens: vi.fn(async (value: string) => options.countTokens?.(value) ?? 10),
@@ -190,6 +209,151 @@ describe("prepareCommitMessageGeneration", () => {
         await expect(
             prepareCommitMessageGeneration(request(folder) as never),
         ).rejects.toBeInstanceOf(CopilotUnavailableError);
+    });
+
+    it("reads the provider setting on every request and defaults to Copilot", async () => {
+        const folder = await workspace();
+        const selected = model("gpt-4o");
+        mocks.selectChatModels.mockResolvedValue([selected]);
+
+        await prepareCommitMessageGeneration(request(folder) as never);
+
+        expect(mocks.getConfiguration).toHaveBeenCalledWith(
+            "intelligit.commitMessageGeneration",
+            folder.uri,
+        );
+        expect(mocks.selectChatModels).toHaveBeenCalledWith({ vendor: "copilot" });
+        expect(mocks.requestOpenAiCompatibleCommitMessage).not.toHaveBeenCalled();
+
+        mocks.commitMessageSettings = {
+            provider: "openaiCompatible",
+            "openAi.baseUrl": "https://example.test/v1",
+            "openAi.model": "gpt-test",
+        };
+        mocks.requestOpenAiCompatibleCommitMessage.mockResolvedValue(
+            (async function* () {
+                yield "fix: switched provider";
+            })(),
+        );
+        const switched = await prepareCommitMessageGeneration(request(folder) as never);
+        await expect(Array.fromAsync(switched.text)).resolves.toEqual(["fix: switched provider"]);
+        expect(mocks.selectChatModels).toHaveBeenCalledOnce();
+        expect(mocks.requestOpenAiCompatibleCommitMessage).toHaveBeenCalledOnce();
+    });
+
+    it("selects a Copilot model only when its id exactly matches the configured id", async () => {
+        const folder = await workspace();
+        const sameFamilyDifferentId = model("gpt-4o", { id: "copilot-other" });
+        const exactMatch = model("gpt-4o", { id: "copilot-exact" });
+        mocks.commitMessageSettings = { copilotModelId: "copilot-exact" };
+        mocks.selectChatModels.mockResolvedValue([sameFamilyDifferentId, exactMatch]);
+
+        const prepared = await prepareCommitMessageGeneration(request(folder) as never);
+
+        expect(prepared.model).toBe(exactMatch);
+    });
+
+    it("does not fall back when the configured Copilot model is unavailable", async () => {
+        const folder = await workspace();
+        const fallback = model("gpt-4o", { id: "copilot-other" });
+        mocks.commitMessageSettings = { copilotModelId: "copilot-missing" };
+        mocks.selectChatModels.mockResolvedValue([fallback]);
+
+        await expect(
+            prepareCommitMessageGeneration(request(folder) as never),
+        ).rejects.toMatchObject({
+            kind: "copilotModelUnavailable",
+        });
+        expect(fallback.sendRequest).not.toHaveBeenCalled();
+        expect(mocks.requestOpenAiCompatibleCommitMessage).not.toHaveBeenCalled();
+    });
+
+    it("routes each request to the configured OpenAI-compatible client", async () => {
+        const folder = await workspace();
+        mocks.commitMessageSettings = {
+            provider: "openaiCompatible",
+            "openAi.baseUrl": "https://example.test/v1",
+            "openAi.model": "gpt-test",
+            "openAi.apiKey": "secret",
+            "openAi.maxInputTokens": 2048,
+        };
+        mocks.requestOpenAiCompatibleCommitMessage.mockResolvedValue(
+            (async function* () {
+                yield "fix: external";
+            })(),
+        );
+
+        const prepared = await prepareCommitMessageGeneration(request(folder) as never);
+
+        expect(mocks.selectChatModels).not.toHaveBeenCalled();
+        expect(mocks.requestOpenAiCompatibleCommitMessage).toHaveBeenCalledOnce();
+        expect(mocks.requestOpenAiCompatibleCommitMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                baseUrl: "https://example.test/v1",
+                model: "gpt-test",
+                apiKey: "secret",
+                token: expect.anything(),
+            }),
+        );
+        expect(mocks.requestOpenAiCompatibleCommitMessage.mock.calls[0][0].prompt).toContain(
+            "Selected-path unified diff:",
+        );
+        await expect(Array.fromAsync(prepared.text)).resolves.toEqual(["fix: external"]);
+    });
+
+    it("fits multibyte diffs within the external input budget without losing the output contract", async () => {
+        const folder = await workspace();
+        mocks.commitMessageSettings = {
+            provider: "openaiCompatible",
+            "openAi.baseUrl": "https://example.test/v1",
+            "openAi.model": "gpt-test",
+            "openAi.maxInputTokens": 1024,
+        };
+        mocks.requestOpenAiCompatibleCommitMessage.mockResolvedValue(
+            (async function* () {
+                yield "fix: fitted";
+            })(),
+        );
+
+        const prepared = await prepareCommitMessageGeneration(
+            request(folder, {
+                diffResult: {
+                    diff: "🌳".repeat(3000),
+                    summarizedPaths: [],
+                    truncated: false,
+                },
+            }) as never,
+        );
+
+        expect(Buffer.byteLength(prepared.prompt, "utf8")).toBeLessThanOrEqual(1024);
+        expect(prepared.prompt).toContain("no Markdown/code fences");
+        expect(prepared.prompt).toContain("Prompt context was truncated");
+    });
+
+    it.each([
+        "externalConfiguration",
+        "externalAuthentication",
+        "externalRequestFailed",
+        "externalTimeout",
+        "externalInvalidResponse",
+    ] as const)("preserves the external %s error kind", async (kind) => {
+        const folder = await workspace();
+        mocks.commitMessageSettings = {
+            provider: "openaiCompatible",
+            "openAi.baseUrl": "https://example.test/v1",
+            "openAi.model": "gpt-test",
+            "openAi.apiKey": "secret",
+            "openAi.maxInputTokens": 2048,
+        };
+        mocks.requestOpenAiCompatibleCommitMessage.mockRejectedValue(
+            new OpenAiCompatibleError(kind),
+        );
+
+        await expect(
+            prepareCommitMessageGeneration(request(folder) as never),
+        ).rejects.toMatchObject({
+            kind,
+        });
     });
 
     it("wraps a non-Error model selection rejection with a stable message and preserved cause", async () => {

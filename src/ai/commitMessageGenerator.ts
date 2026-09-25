@@ -2,6 +2,10 @@ import { lstat, open, realpath } from "node:fs/promises";
 import path from "node:path";
 import * as vscode from "vscode";
 import type { DiffForPathsResult } from "../git/operations";
+import {
+    OpenAiCompatibleError,
+    requestOpenAiCompatibleCommitMessage,
+} from "./openAiCompatibleCommitMessageClient";
 
 /** Limits any single repository instruction file before it reaches the prompt. */
 const MAX_INSTRUCTION_FILE_BYTES = 8_000;
@@ -33,7 +37,13 @@ export type CommitMessageGenerationErrorKind =
     | "unknown"
     | "cancelled"
     | "promptTooLarge"
-    | "emptyResult";
+    | "emptyResult"
+    | "copilotModelUnavailable"
+    | "externalConfiguration"
+    | "externalAuthentication"
+    | "externalRequestFailed"
+    | "externalTimeout"
+    | "externalInvalidResponse";
 
 /**
  * Base error for the P3 generator's stable failure surface.
@@ -86,12 +96,12 @@ export class PromptTooLargeError extends GenerationRequestError {
 export class EmptyResultError extends GenerationRequestError {
     /** Creates the stable empty-completion failure. */
     constructor() {
-        super("emptyResult", "Copilot returned an empty commit message.");
+        super("emptyResult", "The model returned an empty commit message.");
         this.name = "EmptyResultError";
     }
 }
 
-/** Inputs required to prepare, but not yet consume, a Copilot commit-message response. */
+/** Inputs required to prepare, but not yet consume, a commit-message response. */
 export interface PrepareCommitMessageGenerationOptions {
     /** Target repository workspace configuration scope and safe root for instruction files. */
     workspaceFolder: vscode.WorkspaceFolder;
@@ -109,8 +119,8 @@ export interface PrepareCommitMessageGenerationOptions {
 
 /** Awaitable pre-start output that P4 can obtain before it emits its start event. */
 export interface PreparedCommitMessageGeneration {
-    /** Copilot model selected before any prompt fitting begins. */
-    model: vscode.LanguageModelChat;
+    /** Selected Copilot model; absent for an OpenAI-compatible request. */
+    model?: vscode.LanguageModelChat;
     /** Fitted prompt that was supplied to the model. */
     prompt: string;
     /** Async text-only response stream that can still fail while it is consumed. */
@@ -301,6 +311,12 @@ async function awaitWithCancellation<T>(
 /** Maps raw LM and cancellation failures to the stable P3 error surface. */
 function toGenerationError(error: unknown): GenerationRequestError {
     if (error instanceof GenerationRequestError) return error;
+    if (error instanceof OpenAiCompatibleError) {
+        return new GenerationRequestError(
+            error.kind,
+            "OpenAI-compatible commit-message generation failed.",
+        );
+    }
     const code =
         typeof error === "object" && error !== null
             ? (error as { code?: unknown }).code
@@ -332,7 +348,7 @@ function buildPrompt(context: PromptContext, amend: boolean): string {
     return [
         "Generate a commit message for the selected checked paths.",
         `This is a ${amend ? "commit amendment" : "normal commit"}.`,
-        context.wasTrimmed ? "Prompt context was truncated to fit the selected Copilot model." : "",
+        context.wasTrimmed ? "Prompt context was truncated to fit the selected model." : "",
         "Selected-path unified diff:",
         context.diff || "(No patch text was available.)",
         context.summarizedPaths.length > 0
@@ -401,8 +417,59 @@ function mutableContextChars(context: PromptContext): number {
     );
 }
 
+/** Fits an external prompt conservatively using UTF-8 bytes, without claiming a tokenizer match. */
+async function prepareExternalGeneration(
+    options: PrepareCommitMessageGenerationOptions,
+    settings: vscode.WorkspaceConfiguration,
+    original: PromptContext,
+): Promise<PreparedCommitMessageGeneration> {
+    const baseUrl = settings.get<unknown>("openAi.baseUrl");
+    const externalModel = settings.get<unknown>("openAi.model");
+    const apiKey = settings.get<unknown>("openAi.apiKey") ?? "";
+    const maxInputTokens = settings.get<unknown>("openAi.maxInputTokens") ?? 8192;
+    if (
+        typeof baseUrl !== "string" ||
+        typeof externalModel !== "string" ||
+        typeof apiKey !== "string" ||
+        !Number.isInteger(maxInputTokens) ||
+        (maxInputTokens as number) < 256 ||
+        (maxInputTokens as number) > 32768
+    ) {
+        throw new GenerationRequestError(
+            "externalConfiguration",
+            "Invalid OpenAI-compatible settings.",
+        );
+    }
+    const budget = maxInputTokens as number;
+    let context = capContext(original, Math.min(MAX_MUTABLE_CONTEXT_CHARS, budget));
+    let prompt = buildPrompt(context, options.amend);
+    for (let attempt = 0; attempt < 5 && Buffer.byteLength(prompt, "utf8") > budget; attempt += 1) {
+        const remaining = mutableContextChars(context);
+        if (remaining === 0) break;
+        const nextCap = Math.max(
+            0,
+            Math.min(
+                remaining - 1,
+                Math.floor(((remaining * budget) / Buffer.byteLength(prompt, "utf8")) * 0.9),
+            ),
+        );
+        context = capContext(context, nextCap);
+        prompt = buildPrompt(context, options.amend);
+    }
+    if (Buffer.byteLength(prompt, "utf8") > budget) throw new PromptTooLargeError();
+    const text = await requestOpenAiCompatibleCommitMessage({
+        baseUrl,
+        model: externalModel,
+        apiKey,
+        prompt,
+        token: options.token,
+    });
+    throwIfCancelled(options.token);
+    return { prompt, text: textOnlyStream(text, options.token) };
+}
+
 /**
- * Selects, safely prepares, token-fits, and starts a text-only Copilot response before P4 emits start.
+ * Selects, safely prepares, fits, and starts a text-only provider response before P4 emits start.
  * It throws stable typed failures and never starts a request whose measured prompt exceeds the input budget.
  *
  * @public consumed by the later commit-message coordinator.
@@ -412,13 +479,38 @@ export async function prepareCommitMessageGeneration(
 ): Promise<PreparedCommitMessageGeneration> {
     const logger = options.logger ?? console.warn;
     try {
-        const models = await awaitWithCancellation(
-            vscode.lm.selectChatModels({ vendor: "copilot" }),
-            options.token,
+        const settings = vscode.workspace.getConfiguration(
+            "intelligit.commitMessageGeneration",
+            options.workspaceFolder.uri,
         );
+        const provider = settings.get<unknown>("provider") ?? "copilot";
+        if (provider !== "copilot" && provider !== "openaiCompatible") {
+            throw new GenerationRequestError(
+                "externalConfiguration",
+                "Invalid commit-message provider.",
+            );
+        }
+        const models =
+            provider === "copilot"
+                ? await awaitWithCancellation(
+                      vscode.lm.selectChatModels({ vendor: "copilot" }),
+                      options.token,
+                  )
+                : undefined;
         throwIfCancelled(options.token);
-        if (models.length === 0) throw new CopilotUnavailableError();
-        const model = chooseModel(models);
+        if (models?.length === 0) throw new CopilotUnavailableError();
+        const selectedId = settings.get<string>("copilotModelId")?.trim();
+        const model =
+            models &&
+            (selectedId
+                ? models.find((candidate) => candidate.id === selectedId)
+                : chooseModel(models));
+        if (models && !model) {
+            throw new GenerationRequestError(
+                "copilotModelUnavailable",
+                "The selected Copilot model is unavailable.",
+            );
+        }
         const instructions = await loadInstructions(options.workspaceFolder, options.token, logger);
         throwIfCancelled(options.token);
         const original: PromptContext = {
@@ -429,6 +521,7 @@ export async function prepareCommitMessageGeneration(
             instructions,
             wasTrimmed: false,
         };
+        if (!model) return await prepareExternalGeneration(options, settings, original);
         const budget = model.maxInputTokens - OUTPUT_TOKEN_MARGIN;
         if (budget <= 0) throw new PromptTooLargeError();
         let context = capContext(original, MAX_MUTABLE_CONTEXT_CHARS);

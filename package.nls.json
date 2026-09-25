@@ -99,5 +99,13 @@
     "command.showReviewPrompt": "Show Review Prompt",
     "command.resetReviewPrompt": "Reset Review Prompt State",
     "command.showReviewPromptCard": "Show Review Prompt Card",
-    "configuration.reviewPrompt.enabled.description": "Ask for a marketplace rating after IntelliGit has been used for a while. Disable to never be asked."
+    "configuration.reviewPrompt.enabled.description": "Ask for a marketplace rating after IntelliGit has been used for a while. Disable to never be asked.",
+    "configuration.commitMessageGeneration.provider.markdownDescription": "Provider for AI-generated commit messages. `copilot` uses GitHub Copilot; `openaiCompatible` uses an OpenAI-compatible HTTP API.",
+    "configuration.commitMessageGeneration.provider.enum.copilot": "Use GitHub Copilot (default).",
+    "configuration.commitMessageGeneration.provider.enum.openaiCompatible": "Use an OpenAI-compatible HTTP API.",
+    "configuration.commitMessageGeneration.copilotModelId.markdownDescription": "Optional GitHub Copilot model id for commit message generation. Leave empty to use the Copilot default.",
+    "configuration.commitMessageGeneration.openAi.baseUrl.markdownDescription": "Base URL for the OpenAI-compatible commit message API, for example `https://api.openai.com/v1`.",
+    "configuration.commitMessageGeneration.openAi.model.markdownDescription": "Model id sent to the OpenAI-compatible commit message API.",
+    "configuration.commitMessageGeneration.openAi.apiKey.markdownDescription": "API key sent to the OpenAI-compatible commit message API. Stored in VS Code settings as plaintext.",
+    "configuration.commitMessageGeneration.openAi.maxInputTokens.markdownDescription": "Maximum number of input tokens sent to the OpenAI-compatible commit message API."
 }

@@ -674,5 +674,11 @@
     "Pull is only available for local files.": "풀은 로컬 파일에서만 사용할 수 있습니다.",
     "Pull succeeded, but refresh failed: {message}": "풀은 완료되었지만 새로 고침에 실패했습니다: {message}",
     "Push is only available for local files.": "푸시는 로컬 파일에서만 사용할 수 있습니다.",
-    "Could not refresh after Push: {message}": "푸시 후 새로 고칠 수 없습니다: {message}"
+    "Could not refresh after Push: {message}": "푸시 후 새로 고칠 수 없습니다: {message}",
+    "The selected GitHub Copilot model is unavailable. Choose another model in IntelliGit settings.": "선택한 GitHub Copilot 모델을 사용할 수 없습니다. IntelliGit 설정에서 다른 모델을 선택하세요.",
+    "Configure the OpenAI-compatible commit-message provider in IntelliGit settings.": "IntelliGit 설정에서 OpenAI 호환 커밋 메시지 공급자를 구성하세요.",
+    "OpenAI-compatible API authentication failed. Check your API key.": "OpenAI 호환 API 인증에 실패했습니다. API 키를 확인하세요.",
+    "The OpenAI-compatible API request failed.": "OpenAI 호환 API 요청에 실패했습니다.",
+    "The OpenAI-compatible API request timed out.": "OpenAI 호환 API 요청 시간이 초과되었습니다.",
+    "The OpenAI-compatible API returned an invalid response.": "OpenAI 호환 API가 잘못된 응답을 반환했습니다."
 }

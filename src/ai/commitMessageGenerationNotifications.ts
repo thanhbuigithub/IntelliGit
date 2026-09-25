@@ -36,6 +36,40 @@ export async function showCommitMessageGenerationNotification(
                 vscode.l10n.t("GitHub Copilot blocked commit-message generation."),
             );
             return;
+        case "copilotModelUnavailable":
+            await vscode.window.showErrorMessage(
+                vscode.l10n.t(
+                    "The selected GitHub Copilot model is unavailable. Choose another model in IntelliGit settings.",
+                ),
+            );
+            return;
+        case "externalConfiguration":
+            await vscode.window.showErrorMessage(
+                vscode.l10n.t(
+                    "Configure the OpenAI-compatible commit-message provider in IntelliGit settings.",
+                ),
+            );
+            return;
+        case "externalAuthentication":
+            await vscode.window.showErrorMessage(
+                vscode.l10n.t("OpenAI-compatible API authentication failed. Check your API key."),
+            );
+            return;
+        case "externalRequestFailed":
+            await vscode.window.showErrorMessage(
+                vscode.l10n.t("The OpenAI-compatible API request failed."),
+            );
+            return;
+        case "externalTimeout":
+            await vscode.window.showErrorMessage(
+                vscode.l10n.t("The OpenAI-compatible API request timed out."),
+            );
+            return;
+        case "externalInvalidResponse":
+            await vscode.window.showErrorMessage(
+                vscode.l10n.t("The OpenAI-compatible API returned an invalid response."),
+            );
+            return;
         default:
             return;
     }

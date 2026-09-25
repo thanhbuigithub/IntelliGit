@@ -99,5 +99,13 @@
     "command.addToGitignoreAndUntrack": "Добавить в .gitignore и прекратить отслеживание",
     "command.showFileDiff": "Показать различия",
     "command.showCurrentRevision": "Показать текущую ревизию",
-    "command.annotateWithGitBlame": "Добавить аннотации Git Blame"
+    "command.annotateWithGitBlame": "Добавить аннотации Git Blame",
+    "configuration.commitMessageGeneration.provider.markdownDescription": "Поставщик сообщений коммитов, созданных с помощью ИИ. `copilot` использует GitHub Copilot, а `openaiCompatible` — совместимый с OpenAI HTTP API.",
+    "configuration.commitMessageGeneration.provider.enum.copilot": "Использовать GitHub Copilot (по умолчанию).",
+    "configuration.commitMessageGeneration.provider.enum.openaiCompatible": "Использовать совместимый с OpenAI HTTP API.",
+    "configuration.commitMessageGeneration.copilotModelId.markdownDescription": "Необязательный идентификатор модели GitHub Copilot для создания сообщений коммитов. Оставьте пустым, чтобы использовать модель Copilot по умолчанию.",
+    "configuration.commitMessageGeneration.openAi.baseUrl.markdownDescription": "Базовый URL совместимого с OpenAI API для сообщений коммитов, например `https://api.openai.com/v1`.",
+    "configuration.commitMessageGeneration.openAi.model.markdownDescription": "Идентификатор модели, отправляемый совместимому с OpenAI API для сообщений коммитов.",
+    "configuration.commitMessageGeneration.openAi.apiKey.markdownDescription": "Ключ API, отправляемый совместимому с OpenAI API для сообщений коммитов. Хранится в настройках VS Code в виде обычного текста.",
+    "configuration.commitMessageGeneration.openAi.maxInputTokens.markdownDescription": "Максимальное количество входных токенов, отправляемых совместимому с OpenAI API для сообщений коммитов."
 }

@@ -659,7 +659,13 @@ export type InboundMessage =
               | "emptyResult"
               | "operationInProgress"
               | "commitInProgress"
-              | "invalidRequest";
+              | "invalidRequest"
+              | "copilotModelUnavailable"
+              | "externalConfiguration"
+              | "externalAuthentication"
+              | "externalRequestFailed"
+              | "externalTimeout"
+              | "externalInvalidResponse";
           /** True only when a newer request or commit fence superseded this request. */
           superseded?: boolean;
       }

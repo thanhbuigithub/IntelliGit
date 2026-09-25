@@ -1293,6 +1293,52 @@
                     "default": "",
                     "scope": "window",
                     "markdownDescription": "%configuration.commitChecks.ciCdFilter.markdownDescription%"
+                },
+                "intelligit.commitMessageGeneration.provider": {
+                    "type": "string",
+                    "enum": [
+                        "copilot",
+                        "openaiCompatible"
+                    ],
+                    "enumDescriptions": [
+                        "%configuration.commitMessageGeneration.provider.enum.copilot%",
+                        "%configuration.commitMessageGeneration.provider.enum.openaiCompatible%"
+                    ],
+                    "default": "copilot",
+                    "scope": "machine",
+                    "markdownDescription": "%configuration.commitMessageGeneration.provider.markdownDescription%"
+                },
+                "intelligit.commitMessageGeneration.copilotModelId": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "%configuration.commitMessageGeneration.copilotModelId.markdownDescription%"
+                },
+                "intelligit.commitMessageGeneration.openAi.baseUrl": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "%configuration.commitMessageGeneration.openAi.baseUrl.markdownDescription%"
+                },
+                "intelligit.commitMessageGeneration.openAi.model": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "%configuration.commitMessageGeneration.openAi.model.markdownDescription%"
+                },
+                "intelligit.commitMessageGeneration.openAi.apiKey": {
+                    "type": "string",
+                    "default": "",
+                    "scope": "machine",
+                    "markdownDescription": "%configuration.commitMessageGeneration.openAi.apiKey.markdownDescription%"
+                },
+                "intelligit.commitMessageGeneration.openAi.maxInputTokens": {
+                    "type": "integer",
+                    "default": 8192,
+                    "minimum": 256,
+                    "maximum": 32768,
+                    "scope": "machine",
+                    "markdownDescription": "%configuration.commitMessageGeneration.openAi.maxInputTokens.markdownDescription%"
                 }
             }
         }

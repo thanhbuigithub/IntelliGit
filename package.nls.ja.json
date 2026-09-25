@@ -99,5 +99,13 @@
     "command.addToGitignoreAndUntrack": ".gitignore に追加して追跡を解除",
     "command.showFileDiff": "差分を表示",
     "command.showCurrentRevision": "現在のリビジョンを表示",
-    "command.annotateWithGitBlame": "Git Blame で注釈"
+    "command.annotateWithGitBlame": "Git Blame で注釈",
+    "configuration.commitMessageGeneration.provider.markdownDescription": "AI で生成するコミットメッセージのプロバイダー。`copilot` は GitHub Copilot を使用し、`openaiCompatible` は OpenAI 互換 HTTP API を使用します。",
+    "configuration.commitMessageGeneration.provider.enum.copilot": "GitHub Copilot を使用（デフォルト）。",
+    "configuration.commitMessageGeneration.provider.enum.openaiCompatible": "OpenAI 互換 HTTP API を使用。",
+    "configuration.commitMessageGeneration.copilotModelId.markdownDescription": "コミットメッセージの生成に使用する GitHub Copilot モデル ID（任意）。空欄にすると Copilot の既定値を使用します。",
+    "configuration.commitMessageGeneration.openAi.baseUrl.markdownDescription": "コミットメッセージ用の OpenAI 互換 API のベース URL（例: `https://api.openai.com/v1`）。",
+    "configuration.commitMessageGeneration.openAi.model.markdownDescription": "コミットメッセージ用の OpenAI 互換 API に送信するモデル ID。",
+    "configuration.commitMessageGeneration.openAi.apiKey.markdownDescription": "コミットメッセージ用の OpenAI 互換 API に送信する API キー。VS Code の設定に平文で保存されます。",
+    "configuration.commitMessageGeneration.openAi.maxInputTokens.markdownDescription": "コミットメッセージ用の OpenAI 互換 API に送信する入力トークンの最大数。"
 }

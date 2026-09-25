@@ -21,7 +21,13 @@ export type CommitMessageGenerationCoordinatorErrorKind =
     | "emptyResult"
     | "operationInProgress"
     | "commitInProgress"
-    | "invalidRequest";
+    | "invalidRequest"
+    | "copilotModelUnavailable"
+    | "externalConfiguration"
+    | "externalAuthentication"
+    | "externalRequestFailed"
+    | "externalTimeout"
+    | "externalInvalidResponse";
 
 /** A correlated structural event emitted to the host that owns a generation attempt. */
 export interface CommitMessageGenerationEvent {

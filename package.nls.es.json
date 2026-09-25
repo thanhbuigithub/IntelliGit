@@ -99,5 +99,13 @@
     "command.addToGitignoreAndUntrack": "Agregar a .gitignore y dejar de seguir",
     "command.showFileDiff": "Mostrar diferencia",
     "command.showCurrentRevision": "Mostrar revisión actual",
-    "command.annotateWithGitBlame": "Anotar con Git Blame"
+    "command.annotateWithGitBlame": "Anotar con Git Blame",
+    "configuration.commitMessageGeneration.provider.markdownDescription": "Proveedor para mensajes de commit generados por IA. `copilot` usa GitHub Copilot; `openaiCompatible` usa una API HTTP compatible con OpenAI.",
+    "configuration.commitMessageGeneration.provider.enum.copilot": "Usar GitHub Copilot (predeterminado).",
+    "configuration.commitMessageGeneration.provider.enum.openaiCompatible": "Usar una API HTTP compatible con OpenAI.",
+    "configuration.commitMessageGeneration.copilotModelId.markdownDescription": "Identificador opcional del modelo de GitHub Copilot para generar mensajes de commit. Déjalo vacío para usar el modelo predeterminado de Copilot.",
+    "configuration.commitMessageGeneration.openAi.baseUrl.markdownDescription": "URL base de la API compatible con OpenAI para mensajes de commit, por ejemplo, `https://api.openai.com/v1`.",
+    "configuration.commitMessageGeneration.openAi.model.markdownDescription": "Identificador del modelo que se envía a la API compatible con OpenAI para mensajes de commit.",
+    "configuration.commitMessageGeneration.openAi.apiKey.markdownDescription": "Clave de API que se envía a la API compatible con OpenAI para mensajes de commit. Se almacena como texto sin formato en la configuración de VS Code.",
+    "configuration.commitMessageGeneration.openAi.maxInputTokens.markdownDescription": "Número máximo de tokens de entrada que se envían a la API compatible con OpenAI para mensajes de commit."
 }

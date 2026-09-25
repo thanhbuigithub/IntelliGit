@@ -674,5 +674,11 @@
     "Pull is only available for local files.": "拉取僅適用於本機檔案。",
     "Pull succeeded, but refresh failed: {message}": "拉取成功，但重新整理失敗：{message}",
     "Push is only available for local files.": "推送僅適用於本機檔案。",
-    "Could not refresh after Push: {message}": "推送後無法重新整理：{message}"
+    "Could not refresh after Push: {message}": "推送後無法重新整理：{message}",
+    "The selected GitHub Copilot model is unavailable. Choose another model in IntelliGit settings.": "所選的 GitHub Copilot 模型無法使用。請在 IntelliGit 設定中選擇其他模型。",
+    "Configure the OpenAI-compatible commit-message provider in IntelliGit settings.": "請在 IntelliGit 設定中設定相容 OpenAI 的提交訊息提供者。",
+    "OpenAI-compatible API authentication failed. Check your API key.": "相容 OpenAI 的 API 驗證失敗。請檢查您的 API 金鑰。",
+    "The OpenAI-compatible API request failed.": "相容 OpenAI 的 API 要求失敗。",
+    "The OpenAI-compatible API request timed out.": "相容 OpenAI 的 API 要求逾時。",
+    "The OpenAI-compatible API returned an invalid response.": "相容 OpenAI 的 API 傳回無效回應。"
 }

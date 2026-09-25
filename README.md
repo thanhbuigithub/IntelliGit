@@ -259,8 +259,21 @@ Configure IntelliGit from VS Code Settings or `settings.json`.
 
     // Ask for a marketplace rating after IntelliGit has been used for a while.
     "intelligit.reviewPrompt.enabled": true,
+
+    // Generate commit messages with GitHub Copilot (the default provider).
+    "intelligit.commitMessageGeneration.provider": "copilot",
+
+    // To use an OpenAI-compatible HTTP API instead, replace the provider value above
+    // with "openaiCompatible" and add these settings. Replace placeholder values locally.
+    // "intelligit.commitMessageGeneration.provider": "openaiCompatible",
+    // "intelligit.commitMessageGeneration.openAi.baseUrl": "https://api.example.com/v1",
+    // "intelligit.commitMessageGeneration.openAi.model": "your-model-id",
+    // "intelligit.commitMessageGeneration.openAi.apiKey": "YOUR_API_KEY",
+    // "intelligit.commitMessageGeneration.openAi.maxInputTokens": 8192,
 }
 ```
+
+The OpenAI-compatible API key is stored as plaintext in VS Code settings. Requests, including the API key and repository diff, are sent in transit and may be exposed to the configured HTTP endpoint, so use HTTPS and a trusted provider.
 
 ## Development
 

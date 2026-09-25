@@ -674,5 +674,11 @@
     "Pull is only available for local files.": "Pull solo está disponible para archivos locales.",
     "Pull succeeded, but refresh failed: {message}": "Extracción completada, pero no se pudo actualizar: {message}",
     "Push is only available for local files.": "Push solo está disponible para archivos locales.",
-    "Could not refresh after Push: {message}": "No se pudo actualizar después del push: {message}"
+    "Could not refresh after Push: {message}": "No se pudo actualizar después del push: {message}",
+    "The selected GitHub Copilot model is unavailable. Choose another model in IntelliGit settings.": "El modelo de GitHub Copilot seleccionado no está disponible. Elige otro modelo en la configuración de IntelliGit.",
+    "Configure the OpenAI-compatible commit-message provider in IntelliGit settings.": "Configura el proveedor de mensajes de confirmación compatible con OpenAI en la configuración de IntelliGit.",
+    "OpenAI-compatible API authentication failed. Check your API key.": "La autenticación de la API compatible con OpenAI falló. Comprueba tu clave de API.",
+    "The OpenAI-compatible API request failed.": "La solicitud a la API compatible con OpenAI falló.",
+    "The OpenAI-compatible API request timed out.": "La solicitud a la API compatible con OpenAI agotó el tiempo de espera.",
+    "The OpenAI-compatible API returned an invalid response.": "La API compatible con OpenAI devolvió una respuesta no válida."
 }

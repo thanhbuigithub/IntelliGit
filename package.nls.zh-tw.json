@@ -99,5 +99,13 @@
     "command.addToGitignoreAndUntrack": "新增至 .gitignore 並停止追蹤",
     "command.showFileDiff": "顯示差異",
     "command.showCurrentRevision": "顯示目前修訂",
-    "command.annotateWithGitBlame": "使用 Git Blame 新增註釋"
+    "command.annotateWithGitBlame": "使用 Git Blame 新增註釋",
+    "configuration.commitMessageGeneration.provider.markdownDescription": "用於產生 AI 提交訊息的提供者。`copilot` 使用 GitHub Copilot；`openaiCompatible` 使用相容於 OpenAI 的 HTTP API。",
+    "configuration.commitMessageGeneration.provider.enum.copilot": "使用 GitHub Copilot（預設）。",
+    "configuration.commitMessageGeneration.provider.enum.openaiCompatible": "使用相容於 OpenAI 的 HTTP API。",
+    "configuration.commitMessageGeneration.copilotModelId.markdownDescription": "用於產生提交訊息的選用 GitHub Copilot 模型 ID。留白即可使用 Copilot 預設模型。",
+    "configuration.commitMessageGeneration.openAi.baseUrl.markdownDescription": "用於提交訊息的相容於 OpenAI API 基礎 URL，例如 `https://api.openai.com/v1`。",
+    "configuration.commitMessageGeneration.openAi.model.markdownDescription": "傳送至相容於 OpenAI API 的提交訊息模型 ID。",
+    "configuration.commitMessageGeneration.openAi.apiKey.markdownDescription": "傳送至相容於 OpenAI API 的提交訊息 API 金鑰。會以純文字儲存在 VS Code 設定中。",
+    "configuration.commitMessageGeneration.openAi.maxInputTokens.markdownDescription": "傳送至相容於 OpenAI API 的提交訊息最大輸入權杖數。"
 }

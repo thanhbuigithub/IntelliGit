@@ -674,5 +674,11 @@
     "Pull is only available for local files.": "プルはローカルファイルでのみ利用できます。",
     "Pull succeeded, but refresh failed: {message}": "プルは完了しましたが、更新に失敗しました: {message}",
     "Push is only available for local files.": "プッシュはローカルファイルでのみ利用できます。",
-    "Could not refresh after Push: {message}": "プッシュ後に更新できませんでした: {message}"
+    "Could not refresh after Push: {message}": "プッシュ後に更新できませんでした: {message}",
+    "The selected GitHub Copilot model is unavailable. Choose another model in IntelliGit settings.": "選択した GitHub Copilot モデルは利用できません。IntelliGit の設定で別のモデルを選択してください。",
+    "Configure the OpenAI-compatible commit-message provider in IntelliGit settings.": "IntelliGit の設定で OpenAI 互換のコミット メッセージ プロバイダーを構成してください。",
+    "OpenAI-compatible API authentication failed. Check your API key.": "OpenAI 互換 API の認証に失敗しました。API キーを確認してください。",
+    "The OpenAI-compatible API request failed.": "OpenAI 互換 API のリクエストに失敗しました。",
+    "The OpenAI-compatible API request timed out.": "OpenAI 互換 API のリクエストがタイムアウトしました。",
+    "The OpenAI-compatible API returned an invalid response.": "OpenAI 互換 API が無効な応答を返しました。"
 }
